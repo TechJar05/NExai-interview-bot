@@ -71,4 +71,4 @@ generated_reports/
 # Frontend builds (if applicable)
 build/
 dist/
-flask_session_data/
+flask_session_data/*
