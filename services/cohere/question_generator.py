@@ -220,7 +220,7 @@ def generate_initial_questions(role, experience_level, years_experience, jd_text
 You are an intelligent AI interviewer conducting a real-time voice-based interview.
 
 The candidate has applied for the position of *{role}*
-Experience Level: *{experience_level}, Years of Experience: **{years_experience}*
+
 
 ---  
  *Resume Extract (Use this for 2 questions)*  
@@ -229,30 +229,29 @@ Experience Level: *{experience_level}, Years of Experience: **{years_experience}
  *Job Description Extract (Use this for 5 questions)*  
 {jd_excerpt}
 
- *Experience Info*  
-Level: {experience_level}  
-Years: {years_experience}
 
  *Target Role*  
 {role}
 ---
 
-Your task is to generate *20 smart, unique, and personalized questions* broken down as follows:
+Your task is to generate *5 smart, unique, and personalized questions* broken down as follows:
 
-1. *5 technical questions from Resume*
-2. *5 technical questions from Job Description*
-3. *5 questions based on Experience*
-4. *5 questions based on Role responsibilities & expectations*
+1. *1 introductory question to open the interview*
+2. *2 technical questions based on Job Description* (include 1 follow-up for the second question)
+3. *1 question based on Resume details*
+4. *1 behavioral question assessing mindset or situational judgment*
+5. *1 closing or role-responsibility-based question to conclude the interview*
+
 
  Guidelines:
-- Each main question must be followed by 2 intelligent follow-ups (use chain of thought)
+
 - Do NOT repeat or overlap topics
 - Avoid any questions from: {previous_questions}
 - Each question must add unique value to the interview
 
  Format exactly like this:
 Main Question: [question here]
-Follow-ups: [follow-up 1] | [follow-up 2]
+Follow-ups: [follow-up 1]
 ---
 
 ONLY use the above format. Do NOT include labels like "Section", "Greeting".
