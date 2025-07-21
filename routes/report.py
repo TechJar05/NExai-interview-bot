@@ -163,8 +163,22 @@ def generate_report():
         else:
             logger.warning(f"Django response: {response.text}")
 
+        
+        # ✅ New: Call Django to mark interview as completed
+        interview_token = session.get("interview_token")  # Must be stored in session earlier
+        if interview_token:
+            mark_complete_url = f"https://nexai.qwiktrace.com/api/jobs/interview/submit/{interview_token}/"
+            complete_resp = requests.post(mark_complete_url)
+
+            if complete_resp.status_code == 200:
+                logger.info("Interview marked as completed.")
+            else:
+                logger.warning(f"Failed to mark interview complete: {complete_resp.text}")
+        else:
+            logger.warning("No interview token found in session to mark as complete.")
+
     except Exception as e:
-        logger.error(f"Report sync or PDF error: {str(e)}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+            logger.error(f"Report sync or PDF error: {str(e)}")
+            return jsonify({"status": "error", "message": str(e)}), 500
 
     return jsonify(report)

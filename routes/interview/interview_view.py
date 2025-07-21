@@ -73,6 +73,8 @@ DJANGO_API_URL = Config.DJANGO_API_URL
 @view_bp.route('/jobs/interview/<token>/')
 def interview(token):
     try:
+
+        session['interview_token'] = token
         # Step 1: Get interview metadata from Django
         interview_url = f"{DJANGO_API_URL}{token}/"
         logger.debug(f"🔍 Requesting interview metadata from: {interview_url}")
@@ -87,7 +89,7 @@ def interview(token):
 
             match_id = data.get('id')
             session['id'] = match_id
-
+             
             # Step 2: Get Resume & JD using match ID
             resume_jd_url = f"https://nexai.qwiktrace.com/api/jobs/resume-jd-by-id/{match_id}/"
             resume_jd_response = requests.get(resume_jd_url, timeout=30)
