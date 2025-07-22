@@ -30,7 +30,7 @@ from .answer_processing import answer_bp
 
 # Create interview API blueprint
 # interview_bp = Blueprint('interview', __name__, url_prefix='/interview/jobs')
-interview_bp = Blueprint('interview', __name__,url_prefix='/ibot/interview')
+interview_bp = Blueprint('interview', __name__,url_prefix='/interview')
 
 # Register all API-related sub-blueprints
 interview_bp.register_blueprint(start_bp)

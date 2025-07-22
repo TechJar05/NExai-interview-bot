@@ -213,46 +213,86 @@ def generate_initial_questions(role, experience_level, years_experience, jd_text
     resume_excerpt = resume_text if resume_text else "N/A"
     jd_excerpt = jd_text if jd_text else "N/A"
 
+#     prompt = f"""
+# You are an intelligent AI interviewer conducting a real-time voice-based interview.
+
+# The candidate has applied for the position of *{role}*
+
+
+# ---  
+#  *Resume Extract (Use this for 2 questions)*  
+# {resume_excerpt}
+
+#  *Job Description Extract (Use this for 5 questions)*  
+# {jd_excerpt}
+
+
+
+#  *Target Role*  
+# {role}
+# ---
+
+# Your task is to generate *10 smart, unique, and personalized questions* broken down as follows:
+
+# 1. *2 technical questions from Resume*
+# 2. *1 technical questions from Job Description*
+# 3. *1 questions based on Experience*
+# 4. *1 questions based on Role responsibilities & expectations*
+
+#  Guidelines:
+# - Each main question must be followed by 2 intelligent follow-ups (use chain of thought)
+# - Do NOT repeat or overlap topics
+# - Avoid any questions from: {previous_questions}
+# - Each question must add unique value to the interview
+
+#  Format exactly like this:
+# Main Question: [question here]
+# Follow-ups: [follow-up 1] | [follow-up 2]
+# ---
+
+# ONLY use the above format. Do NOT include labels like "Section", "Greeting".
+# """
     prompt = f"""
 You are an intelligent AI interviewer conducting a real-time voice-based interview.
 
-The candidate has applied for the position of *{role}*
-Experience Level: *{experience_level}, Years of Experience: **{years_experience}*
+The candidate has applied for the position of *{role}*.
 
----  
- *Resume Extract (Use this for 2 questions)*  
+---
+
+*Resume Extract* (Use for 2 questions):  
 {resume_excerpt}
 
- *Job Description Extract (Use this for 5 questions)*  
+*Job Description Extract* (Use for 2 questions):  
 {jd_excerpt}
 
- *Experience Info*  
-Level: {experience_level}  
-Years: {years_experience}
-
- *Target Role*  
+*Target Role*:  
 {role}
+
 ---
 
-Your task is to generate *20 smart, unique, and personalized questions* broken down as follows:
+Your task is to generate a *6-question smart interview sequence* broken down as follows:
 
-1. *2 technical questions from Resume*
-2. *1 technical questions from Job Description*
-3. *1 questions based on Experience*
-4. *1 questions based on Role responsibilities & expectations*
+1. Introduction Question — icebreaker type (no follow-up)
+2. 1 technical question from Job Description + 1 follow-up
+3. 1 technical question from Resume + 1 follow-up
+4. 1 closing or reflection question (no follow-up)
 
- Guidelines:
-- Each main question must be followed by 2 intelligent follow-ups (use chain of thought)
-- Do NOT repeat or overlap topics
-- Avoid any questions from: {previous_questions}
-- Each question must add unique value to the interview
+Guidelines:
+- Ensure JD and Resume questions are insightful and specific.
+- Use only 1 follow-up for each technical question.
+- Do NOT ask follow-ups for the intro or ending questions.
+- Avoid question repetition and ensure flow is natural.
+- Do NOT include any questions from: {previous_questions}
 
- Format exactly like this:
-Main Question: [question here]
-Follow-ups: [follow-up 1] | [follow-up 2]
----
+Output Format **strictly like this**:
+Q1: [Main Question]  
+Q2: [Main Question]  
+ Follow-up: [Follow-up Question]  
+Q3: [Main Question]  
+ Follow-up: [Follow-up Question]  
+Q4: [Main Question]  
 
-ONLY use the above format. Do NOT include labels like "Section", "Greeting".
+ONLY follow this format. Do not include any extra text like greetings or sections.
 """
 
     try:
