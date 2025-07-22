@@ -107,7 +107,7 @@ from utils.helpers import init_interview_data
 logger = logging.getLogger(__name__)
 
 
-report_bp = Blueprint('report_bp', __name__, url_prefix='/interview')
+report_bp = Blueprint('report_bp', __name__, url_prefix='/ibot/interview')
 
 
 @report_bp.route('/generate_report/', methods=['GET'])
@@ -166,14 +166,19 @@ def generate_report():
         
         # ✅ New: Call Django to mark interview as completed
         interview_token = session.get("interview_token")  # Must be stored in session earlier
+        logger.info(f"Using interview token--------------------------: {interview_token}")
+
         if interview_token:
             mark_complete_url = f"https://nexai.qwiktrace.com/api/jobs/interview/submit/{interview_token}/"
             complete_resp = requests.post(mark_complete_url)
 
             if complete_resp.status_code == 200:
-                logger.info("Interview marked as completed.")
+              logger.info("Interview marked as completed.")
+            elif complete_resp.status_code == 400 and "already submitted" in complete_resp.text.lower():
+              logger.info("Interview was already marked as completed.")
             else:
-                logger.warning(f"Failed to mark interview complete: {complete_resp.text}")
+             logger.warning(f"Failed to mark interview complete: {complete_resp.text}")
+
         else:
             logger.warning("No interview token found in session to mark as complete.")
 

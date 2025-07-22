@@ -478,13 +478,7 @@
           Thank you, {{ data.candidate_name }}, for completing your interview
           with NEX AI.
         </p>
-        <!-- <p class="mb-4" style="font-size: 1rem; color: #aaaaaa">
-          Your responses have been recorded, and you will receive a detailed
-          evaluation report shortly.
-        </p> -->
-        <!-- <button type="button" class="btn btn-primary" id="restartInterviewBtn">
-                <i class="fas fa-redo"></i> Start New Interview
-            </button> -->
+      
       </div>
     </div>
 
@@ -944,21 +938,7 @@
           }
         });
 
-        // End session button click handler
-        // $('#endSessionBtn').click(function() {
-        //     if (confirm("Are you sure you want to end the interview session?")) {
-        //         $.ajax({
-        //             url: '/reset_interview',
-        //             type: 'POST',
-        //             success: function() {
-        //                 interviewComplete();
-        //             },
-        //             error: function(xhr) {
-        //                 alert('Error: ' + (xhr.responseJSON?.message || 'Failed to reset interview'));
-        //             }
-        //         });
-        //     }
-        // });
+    
         // End session button click handler
         $("#endSessionBtn").click(function () {
           if (confirm("Are you sure you want to end the interview session?")) {
@@ -1108,21 +1088,6 @@ function addBotMessage(message) {
 
 
 
-        // // Add user message
-        // function addUserMessage(message) {
-        //     const conversationBox = $('#conversationBox');
-        //     const existingMessage = conversationBox.find(`.user-message[data-question="${currentQuestionNum}"]`);
-        //     if (existingMessage.length) {
-        //         existingMessage.html(`<strong>You:</strong> ${message}`);
-        //     } else {
-        //         conversationBox.append(`
-        //             <div class="user-message" data-question="${currentQuestionNum}">
-        //                 <strong>You:</strong> ${message}
-        //             </div>
-        //         `);
-        //     }
-        //     conversationBox.scrollTop(conversationBox[0].scrollHeight);
-        // }
         // Add user message
         function addUserMessage(message) {
           const conversationBox = $("#conversationBox");
