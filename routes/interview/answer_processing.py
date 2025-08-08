@@ -1,5 +1,3 @@
-
-
 from flask import Blueprint, request, jsonify, session
 from datetime import datetime, timezone
 import numpy as np
@@ -15,13 +13,13 @@ from services.cohere.followup_generator import generate_dynamic_follow_up
 from services.report.generator import generate_interview_report
 # from services.report.file_manager import save_admin_report_txt
 from services.scoring_service import evaluate_response
+from services.stt_service import process_audio_from_base64  # Import WebRTC VAD service
 
 answer_bp = Blueprint('answer_bp', __name__)
 logger = logging.getLogger(__name__)
 
 FRAME_CAPTURE_INTERVAL = 5
 MAX_FOLLOW_UPS = 3
-
 
 @answer_bp.route('/process_answer', methods=['POST'])
 def process_answer():
@@ -34,6 +32,7 @@ def process_answer():
     data = request.get_json()
     answer = data.get('answer', '').strip()
     frame_data = data.get('frame', None)
+    audio_data_base64 = data.get('audio_data', None)  # Get audio data for VAD processing
 
     if not answer:
         return jsonify({"status": "error", "message": "Empty answer"}), 400
@@ -64,73 +63,43 @@ def process_answer():
     current_time = datetime.now().timestamp()
     last_frame_time = interview_data.get("last_frame_time", 0)
 
-    # if frame_data and (current_time - last_frame_time) > FRAME_CAPTURE_INTERVAL:
-    #     try:
-    #         # Safely decode base64 frame
-    #         if ',' in frame_data:
-    #             base64_str = frame_data.split(',')[1]
-    #         else:
-    #             base64_str = frame_data
-
-    #         if not base64_str.strip():
-    #             raise ValueError("Empty base64 frame string")
-
-    #         frame_bytes = base64.b64decode(base64_str)
-    #         frame_array = np.frombuffer(frame_bytes, dtype=np.uint8)
-
-    #         if frame_array.size == 0:
-    #             raise ValueError("Decoded frame array is empty")
-
-    #         frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
-
-    #         if frame is not None:
-    #             frame_base64 = process_frame_for_gpt4v(frame)
-    #             visual_feedback = analyze_visual_response(
-    #                 frame_base64,
-    #                 interview_data['conversation_history'][-3:]
-    #             )
-    #             if visual_feedback:
-    #                 interview_data['visual_feedback'].append(visual_feedback)
-    #                 interview_data['last_frame_time'] = current_time
-    #         else:
-    #             raise ValueError("OpenCV failed to decode the image")
-
-    #     except Exception as e:
-    #         logger.error(f"Error processing frame: {str(e)}", exc_info=True)
-
     if frame_data and (current_time - last_frame_time) > FRAME_CAPTURE_INTERVAL:
-     try:
-        # Decode base64 frame safely
-        base64_str = frame_data.split(',')[1] if ',' in frame_data else frame_data
+        try:
+            # Decode base64 frame safely
+            base64_str = frame_data.split(',')[1] if ',' in frame_data else frame_data
 
-        if not base64_str.strip():
-            logger.warning("⚠ Empty frame received, skipping visual analysis.")
-        else:
-            frame_bytes = base64.b64decode(base64_str)
-            frame_array = np.frombuffer(frame_bytes, dtype=np.uint8)
-
-            if frame_array.size == 0:
-                logger.warning("⚠ Decoded frame array is empty, skipping visual feedback.")
+            if not base64_str.strip():
+                logger.warning("⚠ Empty frame received, skipping visual analysis.")
             else:
-                frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
+                frame_bytes = base64.b64decode(base64_str)
+                frame_array = np.frombuffer(frame_bytes, dtype=np.uint8)
 
-                if frame is not None:
-                    frame_base64 = process_frame_for_gpt4v(frame)
-                    visual_feedback = analyze_visual_response(
-                        frame_base64,
-                        interview_data['conversation_history'][-3:]
-                    )
-                    if visual_feedback:
-                        interview_data['visual_feedback'].append(visual_feedback)
-                        interview_data['last_frame_time'] = current_time
+                if frame_array.size == 0:
+                    logger.warning("⚠ Decoded frame array is empty, skipping visual feedback.")
                 else:
-                    logger.warning("⚠ OpenCV failed to decode frame, skipping.")
-     except Exception as e:
-        logger.error(f"❌ Error processing frame: {str(e)}", exc_info=True)
+                    frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
 
+                    if frame is not None:
+                        frame_base64 = process_frame_for_gpt4v(frame)
+                        visual_feedback = analyze_visual_response(
+                            frame_base64,
+                            interview_data['conversation_history'][-3:]
+                        )
+                        if visual_feedback:
+                            interview_data['visual_feedback'].append(visual_feedback)
+                            interview_data['last_frame_time'] = current_time
+                    else:
+                        logger.warning("⚠ OpenCV failed to decode frame, skipping.")
+        except Exception as e:
+            logger.error(f"❌ Error processing frame: {str(e)}", exc_info=True)
 
-
-
+    # Process audio with WebRTC VAD
+    if audio_data_base64:
+        has_speech, speech_ratio = process_audio_from_base64(audio_data_base64)
+        if has_speech:
+            logger.info("Speech detected in the audio answer")
+        else:
+            logger.warning("No speech detected in the audio answer")
 
     # Rating (no length check — evaluates based on meaning & depth)
     rating = evaluate_response(

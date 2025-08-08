@@ -81,34 +81,80 @@
 //     // Record audio button
 //     $('#recordBtn').click(function() {
 //         $(this).prop('disabled', true).html('<i class="fas fa-microphone-alt-slash"></i> Recording...');
-        
+
+//         startRecording();
+//     });
+
+//     // Start recording and send audio data to backend
+//     let mediaRecorder;
+//     let audioChunks = [];
+
+//     function startRecording() {
+//         console.log("Recording started...");
+
+//         navigator.mediaDevices.getUserMedia({ audio: true })
+//             .then(function(stream) {
+//                 mediaRecorder = new MediaRecorder(stream);
+
+//                 mediaRecorder.ondataavailable = function(event) {
+//                     audioChunks.push(event.data);
+//                 };
+
+//                 mediaRecorder.onstop = function() {
+//                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+//                     const reader = new FileReader();
+
+//                     reader.onloadend = function() {
+//                         // Log base64 audio data for debugging purposes
+//                         console.log("Base64 audio data generated:", reader.result);
+
+//                         // Send the base64-encoded audio data to the backend
+//                         sendAudioToBackend(reader.result);
+//                     };
+
+//                     reader.readAsDataURL(audioBlob);
+//                 };
+
+//                 mediaRecorder.start();
+//             })
+//             .catch(function(error) {
+//                 console.error("Error starting audio recording:", error);
+//             });
+//     }
+
+//     function stopRecording() {
+//         console.log("Recording stopped...");
+//         mediaRecorder.stop();
+//     }
+
+//     // Send audio data to the backend
+//     function sendAudioToBackend(base64AudioData) {
+//         console.log("Sending audio data to backend...");
+
 //         $.ajax({
-//             url: '/ibot/interview/record_audio',
+//             url: '/ibot/interview/submit_answer',
 //             type: 'POST',
+//             contentType: 'application/json',
+//             data: JSON.stringify({
+//                 answer: 'Audio Answer',  // Replace with the actual answer if needed
+//                 audio_data: base64AudioData,  // Send the base64-encoded audio data
+//             }),
 //             success: function(response) {
-//                 if (response.status === 'success') {
-//                     alert('Audio recorded successfully!');
-//                 } else {
-//                     alert('Recording failed: ' + response.message);
-//                 }
+//                 console.log("Backend response:", response);
+//                 // Handle response (e.g., feedback, next question, etc.)
 //             },
 //             error: function(xhr) {
-//                 alert('Error recording audio: ' + xhr.responseJSON?.message || 'Unknown error');
-//             },
-//             complete: function() {
-//                 $('#recordBtn').prop('disabled', false).html('<i class="fas fa-microphone"></i> Record Answer');
+//                 console.error("Error sending audio:", xhr);
 //             }
 //         });
-//     });
+//     }
 
 //     // Generate report
 //     function generateReport() {
-//     $('#generateReportBtn').prop('disabled', true).text('Generating...');
+//         $('#generateReportBtn').prop('disabled', true).text('Generating...');
 
 //         $.ajax({
-
 //             url: '/ibot/interview/generate_report/',
-   
 //             type: 'POST',
 //             success: function(response) {
 //                 $('#generateReportBtn').prop('disabled', false).text('Generate Report');
@@ -165,7 +211,6 @@
 //             }
 //         });
 //     }
-
 
 //     // Restart interview
 //     $('#restartInterviewBtn').click(function() {
@@ -228,128 +273,37 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 $(document).ready(function() {
     // Update question count display
     $('#numQuestions').on('input', function() {
         $('#questionCount').text($(this).val());
     });
 
-    // Audio recording variables
-    let mediaRecorder;
-    let audioChunks = [];
-    let audioBlob;
-    let interviewInProgress = false;
-    let audioContext;
-    let analyser;
-    let vadProcessor; // Assuming WebRTC VAD processor
-    let isVoiceDetected = false;
-
-    let lastActivityTime = Date.now();  // Track the last time voice was detected
-
-    // Initialize VAD
-    function initVAD() {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        let bufferLength = analyser.frequencyBinCount;
-        let dataArray = new Uint8Array(bufferLength);
-
-        // WebRTC VAD - Assuming we have the VAD processor set up
-        vadProcessor = new WebRTCVoiceActivityDetector();
-        vadProcessor.setMode(3); // Set to "very sensitive" mode for detecting low voice levels
-// Mode 0: Very aggressive — detects speech with lower sensitivity (only loud speech).
-
-// Mode 1: Aggressive — works for normal speech.
-
-// Mode 2: Moderate — works for normal speech and quieter voices.
-
-// Mode 3: Very sensitive — detects even the faintest sounds of speech.
-        function checkForVoiceActivity() {
-            analyser.getByteFrequencyData(dataArray);
-            isVoiceDetected = vadProcessor.isSpeech(dataArray);
-
-            if (isVoiceDetected) {
-                handleVoiceDetected(); // Handle when voice is detected
-            } else {
-                handleSilenceDetected(); // Handle when silence is detected
-            }
-
-            requestAnimationFrame(checkForVoiceActivity);
-        }
-
-        checkForVoiceActivity();  // Start the VAD loop
-    }
-
-    // Handle when voice is detected
-    function handleVoiceDetected() {
-        lastActivityTime = Date.now();  // Reset inactivity timer
-        console.log("Voice detected...");
-        $('#micButton').addClass('recording');  // Change mic button state to indicate recording
-    }
-
-    // Handle when silence is detected
-    function handleSilenceDetected() {
-        if (Date.now() - lastActivityTime > 3000) {  // 3 seconds of silence before triggering action
-            console.log("Silence detected for too long...");
-            stopRecording();  // Stop recording when silence exceeds 3 seconds
-        }
-    }
-
-    // Start recording and initialize VAD
-    function startRecording() {
-        if (interviewInProgress) {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    const source = audioContext.createMediaStreamSource(stream);
-                    source.connect(analyser);
-                    initVAD();  // Initialize VAD for real-time speech detection
-
-                    mediaRecorder = new MediaRecorder(stream);
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
-                    mediaRecorder.onstop = () => {
-                        audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        uploadAudio();  // Upload audio when recording stops
-                    };
-                    mediaRecorder.start();
-                    console.log('Recording started...');
-                })
-                .catch(error => {
-                    console.error('Error accessing audio devices:', error);
-                });
-        }
-    }
-
-
-    // Stop the recording when the interview ends or when manually stopped
-    function stopRecording() {
-        if (mediaRecorder) {
-            mediaRecorder.stop();
-            console.log('Recording stopped');
-        }
-    }
-
-    // Upload the audio file to the server after the recording ends
-    function uploadAudio() {
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-        formData.append('session_id', sessionStorage.getItem('session_id')); // or generate a unique session ID
-
-        fetch('/upload_audio', {
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                console.log('Audio uploaded successfully');
-            }
-        })
-        .catch(error => {
-            console.error('Error uploading audio:', error);
-        });
-    }
     // Start interview
     $('#startInterviewBtn').click(function() {
         const role = $('#role').val();
@@ -427,34 +381,80 @@ $(document).ready(function() {
     // Record audio button
     $('#recordBtn').click(function() {
         $(this).prop('disabled', true).html('<i class="fas fa-microphone-alt-slash"></i> Recording...');
-        
+
+        startRecording();
+    });
+
+    // Start recording and send audio data to backend
+    let mediaRecorder;
+    let audioChunks = [];
+
+    function startRecording() {
+        console.log("Recording started...");
+
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function(stream) {
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = function(event) {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = function() {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const reader = new FileReader();
+
+                    reader.onloadend = function() {
+                        // Log base64 audio data for debugging purposes
+                        console.log("Base64 audio data generated:", reader.result);
+
+                        // Send the base64-encoded audio data to the backend
+                        sendAudioToBackend(reader.result);
+                    };
+
+                    reader.readAsDataURL(audioBlob);
+                };
+
+                mediaRecorder.start();
+            })
+            .catch(function(error) {
+                console.error("Error starting audio recording:", error);
+            });
+    }
+
+    function stopRecording() {
+        console.log("Recording stopped...");
+        mediaRecorder.stop();
+    }
+
+    // Send audio data to the backend
+    function sendAudioToBackend(base64AudioData) {
+        console.log("Sending audio data to backend...");
+
         $.ajax({
-            url: '/ibot/interview/record_audio',
+            url: '/ibot/interview/submit_answer',
             type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                answer: 'Audio Answer',  // Replace with the actual answer if needed
+                audio_data: base64AudioData,  // Send the base64-encoded audio data
+            }),
             success: function(response) {
-                if (response.status === 'success') {
-                    alert('Audio recorded successfully!');
-                } else {
-                    alert('Recording failed: ' + response.message);
-                }
+                console.log("Backend response:", response);
+                // Handle response (e.g., feedback, next question, etc.)
             },
             error: function(xhr) {
-                alert('Error recording audio: ' + xhr.responseJSON?.message || 'Unknown error');
-            },
-            complete: function() {
-                $('#recordBtn').prop('disabled', false).html('<i class="fas fa-microphone"></i> Record Answer');
+                console.error("Error sending audio:", xhr);
             }
         });
-    });
+    }
 
     // Generate report
     function generateReport() {
-    $('#generateReportBtn').prop('disabled', true).text('Generating...');
+        $('#generateReportBtn').prop('disabled', true).text('Generating...');
 
         $.ajax({
-
             url: '/ibot/interview/generate_report/',
-   
             type: 'POST',
             success: function(response) {
                 $('#generateReportBtn').prop('disabled', false).text('Generate Report');
@@ -511,7 +511,6 @@ $(document).ready(function() {
             }
         });
     }
-
 
     // Restart interview
     $('#restartInterviewBtn').click(function() {
